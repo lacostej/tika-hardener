@@ -7,4 +7,4 @@ The project contains tests to reveal such problems in various parsers.
 The first test takes several simple documents and flip bits in order to see how tika reacts.
 So far we've reproduced several types of OutOfMemoryError, RuntimeException, etc.
 
-There are probably other types of algorythm to be used to stress test the parsers, feel free to come with some ideas.
+There are probably other types of algorithms to be used to stress test the parsers, feel free to come with some ideas.
