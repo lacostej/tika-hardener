@@ -1,0 +1,10 @@
+This project tries to stress test the parsers used by Apache Tika.
+
+It started when we experienced and OutOfMemoryError while parsing a Word document. Inproper reverse engineered parser or invalid input file should be handled more gracefully. Tike has to be more failure resilient.
+
+The project contains tests to reveal such problems in various parsers.
+
+The first test takes several simple documents and flip bits in order to see how tika reacts.
+So far we've reproduced several types of OutOfMemoryError, RuntimeException, etc.
+
+There are probably other types of algorythm to be used to stress test the parsers, feel free to come with some ideas.
