@@ -1,9 +1,7 @@
 package no.finntech.io.utils;
 
-import no.finntech.io.utils.BitFlipperInputStream;
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.MockitoAnnotations;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -14,11 +12,6 @@ import static junit.framework.Assert.assertEquals;
 public class BitFlipperInputStreamTest {
     private InputStream wrapped;
     private BitFlipperInputStream corrupt;
-
-    @Before
-    public void setUp() throws Exception {
-        MockitoAnnotations.initMocks(this);
-    }
 
     @Test
     public void bitPosition() throws IOException {
