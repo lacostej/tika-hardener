@@ -5,6 +5,7 @@ import org.apache.tika.Tika;
 import org.apache.tika.config.TikaConfig;
 import org.apache.tika.exception.TikaException;
 import org.apache.tika.fork.ForkParser;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -27,16 +28,22 @@ public class TikaIndexerHardenerTest {
 
     private Tika tika;
     private Tika linearTika;
+    private ForkParser forkParser;
     private Tika forkedTika;
 
     @Before
     public void setUp() throws Exception {
         linearTika = new Tika();
 
-        ForkParser parser = new ForkParser();
-        forkedTika = new Tika(TikaConfig.getDefaultConfig().getDetector(), parser);
+        forkParser = new ForkParser();
+        forkedTika = new Tika(TikaConfig.getDefaultConfig().getDetector(), forkParser);
 
         useLinearTika();
+    }
+
+    @After
+    public void tearDown() throws Exception {
+        forkParser.close();
     }
 
     public void useLinearTika() {
