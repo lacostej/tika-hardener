@@ -2,7 +2,10 @@ package no.finntech.tika.harderner;
 
 import no.finntech.io.utils.BitFlipperInputStream;
 import org.apache.tika.Tika;
+import org.apache.tika.config.TikaConfig;
 import org.apache.tika.exception.TikaException;
+import org.apache.tika.fork.ForkParser;
+import org.junit.Before;
 import org.junit.Test;
 
 import java.io.File;
@@ -20,18 +23,55 @@ import static junit.framework.Assert.assertEquals;
  */
 public class TikaIndexerHardenerTest {
 
-    private Tika tika = new Tika();
+    private static final boolean DEBUG = false;
+
+    private Tika tika;
+    private Tika linearTika;
+    private Tika forkedTika;
+
+    @Before
+    public void setUp() throws Exception {
+        linearTika = new Tika();
+
+        ForkParser parser = new ForkParser();
+        forkedTika = new Tika(TikaConfig.getDefaultConfig().getDetector(), parser);
+
+        useLinearTika();
+    }
+
+    public void useLinearTika() {
+        tika = linearTika;
+    }
+
+    public void useForkedTika() {
+        tika = forkedTika;
+    }
 
     @Test
     public void originalFileIndexesProperly() throws Exception {
         URL url = getFileUrl("testing.doc");
         assertEquals(IndexResult.OK, flipBitAndIndexContent(url, -1));
+        assertEquals(IndexResult.OK, indexContent(url));
     }
 
     @Test
+    /** https://issues.apache.org/bugzilla/show_bug.cgi?id=52372 */
     public void invalidPoiSectionSizeShouldntCauseUnhandledExceptions() throws Exception {
         URL url = getFileUrl("testing.doc");
-        assertEquals(IndexResult.OK, flipBitAndIndexContent(url, 2295 * 8 + 2));
+        assertEquals(IndexResult.HANDLED, flipBitAndIndexContent(url, 2295 * 8 + 2));
+    }
+
+    @Test
+    /**
+     * Errors are swallowed by tika. This test is only valid if the POI is still broken
+     * https://issues.apache.org/jira/browse/TIKA-815
+     */
+    public void outOfMemoryErrorInPoiIsFixedAndPorperlyReportedInForkMode() throws Exception {
+        URL url = getFileUrl("testing.doc");
+        assertEquals(IndexResult.UNHANDLED, flipBitAndIndexContent(url, 2295 * 8 + 2));
+        
+        useForkedTika();
+        assertEquals(IndexResult.HANDLED, flipBitAndIndexContent(url, 2295 * 8 + 2));
     }
 
     // these tests take longer time but allows to find various kind of problems
@@ -80,14 +120,28 @@ public class TikaIndexerHardenerTest {
         return result;
     }
 
+    private IndexResult indexContent(URL url) throws IOException {
+        InputStream inputStream = url.openStream();
+        IndexResult result = parseContent(inputStream);
+        if (result == IndexResult.UNHANDLED)
+            System.err.println("[" + result + "] caused unexpected exception.");
+        return result;
+    }
+
     private IndexResult parseContent(InputStream inputStream) throws IOException {
         IndexResult result = IndexResult.OK;
         try {
-            tika.parseToString(inputStream);
+            String s = tika.parseToString(inputStream);
+            if (DEBUG)
+                System.out.println("PARSED: " + s);
         } catch (TikaException ignored) {
             result = IndexResult.HANDLED;
+            if (DEBUG)
+                ignored.printStackTrace(System.err);
         } catch (IOException ignored) {
             result = IndexResult.HANDLED;
+            if (DEBUG)
+                ignored.printStackTrace(System.err);
         } catch (Throwable unhandled) {
             result = IndexResult.UNHANDLED;
             unhandled.printStackTrace(System.err);
@@ -98,7 +152,9 @@ public class TikaIndexerHardenerTest {
     }
 
     private URL getFileUrl(String fileName) throws MalformedURLException {
-        return new URL(this.getClass().getResource("/" + fileName).toString());
+        URL resource = this.getClass().getResource("/" + fileName);
+        if (resource == null)
+            throw new IllegalStateException("Couldn@t find resource for file " + fileName);
+        return new URL(resource.toString());
     }
-
 }
