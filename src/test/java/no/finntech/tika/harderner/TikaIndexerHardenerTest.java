@@ -1,10 +1,10 @@
 package no.finntech.tika.harderner;
 
 import no.finntech.io.utils.BitFlipperInputStream;
-import org.apache.tika.Tika;
-import org.apache.tika.config.TikaConfig;
-import org.apache.tika.exception.TikaException;
-import org.apache.tika.fork.ForkParser;
+import no.finntech.parser.DocumentParser;
+import no.finntech.parser.DocumentParserException;
+import no.finntech.parser.TikaForkedProcessDocumentParser;
+import no.finntech.parser.TikaInProcessDocumentParser;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -20,30 +20,28 @@ import java.util.List;
 import static junit.framework.Assert.assertEquals;
 
 /**
- * A set of test that flips bits in various files to detect unexpected issues in the various parsers.
+ * A set of test that flips bits in various files to detect unexpected issues in the various document parsers.
  */
 public class TikaIndexerHardenerTest {
 
     private static final boolean DEBUG = false;
 
-    private Tika tika;
-    private Tika linearTika;
-    private ForkParser forkParser;
-    private Tika forkedTika;
+    private DocumentParser tika;
+    private DocumentParser linearTika;
+    private DocumentParser forkedTika;
 
     @Before
     public void setUp() throws Exception {
-        linearTika = new Tika();
+        linearTika = new TikaInProcessDocumentParser();
 
-        forkParser = new ForkParser();
-        forkedTika = new Tika(TikaConfig.getDefaultConfig().getDetector(), forkParser);
+        forkedTika = new TikaForkedProcessDocumentParser();
 
         useLinearTika();
     }
 
     @After
     public void tearDown() throws Exception {
-        forkParser.close();
+        forkedTika.close();
     }
 
     public void useLinearTika() {
@@ -62,10 +60,16 @@ public class TikaIndexerHardenerTest {
     }
 
     @Test
-    /** https://issues.apache.org/bugzilla/show_bug.cgi?id=52372 */
+    /** c */
     public void invalidPoiSectionSizeShouldntCauseUnhandledExceptions() throws Exception {
         URL url = getFileUrl("testing.doc");
         assertEquals(IndexResult.HANDLED, flipBitAndIndexContent(url, 2295 * 8 + 2));
+    }
+
+    @Test
+    public void invalidPoiSummaryPropertiesSizeShouldntCauseUnhandledExceptions() throws Exception {
+        URL url = getFileUrl("testing.doc");
+        assertEquals(IndexResult.HANDLED, flipBitAndIndexContent(url, 18138));
     }
 
     @Test
@@ -141,7 +145,7 @@ public class TikaIndexerHardenerTest {
             String s = tika.parseToString(inputStream);
             if (DEBUG)
                 System.out.println("PARSED: " + s);
-        } catch (TikaException ignored) {
+        } catch (DocumentParserException ignored) {
             result = IndexResult.HANDLED;
             if (DEBUG)
                 ignored.printStackTrace(System.err);
