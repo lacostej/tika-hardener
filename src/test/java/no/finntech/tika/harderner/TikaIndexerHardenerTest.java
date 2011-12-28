@@ -60,13 +60,14 @@ public class TikaIndexerHardenerTest {
     }
 
     @Test
-    /** c */
+    /** https://issues.apache.org/bugzilla/show_bug.cgi?id=52372 */
     public void invalidPoiSectionSizeShouldntCauseUnhandledExceptions() throws Exception {
         URL url = getFileUrl("testing.doc");
         assertEquals(IndexResult.HANDLED, flipBitAndIndexContent(url, 2295 * 8 + 2));
     }
 
     @Test
+    /** failure not yet reported **/
     public void invalidPoiSummaryPropertiesSizeShouldntCauseUnhandledExceptions() throws Exception {
         URL url = getFileUrl("testing.doc");
         assertEquals(IndexResult.HANDLED, flipBitAndIndexContent(url, 18138));
